@@ -1,8 +1,14 @@
-import React, { useState, useEffect, useMemo, FC } from 'react';
+import { useState, useEffect, useMemo, FC } from 'react';
 import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import * as anchor from "@project-serum/anchor";
 import { Program, AnchorProvider as Provider, web3, utils, BN } from '@project-serum/anchor';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
+import {
+  GlowWalletAdapter,
+  PhantomWalletAdapter,
+  SlopeWalletAdapter,
+  SolflareWalletAdapter,
+  TorusWalletAdapter,
+} from '@solana/wallet-adapter-wallets';
 import { ConnectionProvider, WalletProvider, useWallet, useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Button, Container, Form } from 'react-bootstrap';
 import idl from '../idl.json';
@@ -15,9 +21,14 @@ const idl_string = JSON.stringify(idl)
 const idl_object = JSON.parse(idl_string)
 const programID = new PublicKey(idl.metadata.address);
 
-const wallets = [ new PhantomWalletAdapter(),]
+const wallets = [
+  new PhantomWalletAdapter(),
+  new GlowWalletAdapter(),
+  new SolflareWalletAdapter(),
+  new TorusWalletAdapter(),
+]
 
-export const Notes: FC = () => {
+export const NoteProvider: FC = () => {
   const [value, setValue] = useState(null);
   const [notes, setNotes] = useState([]) // returns the results in an array, so []
   const wallet = useWallet();
@@ -49,7 +60,8 @@ export const Notes: FC = () => {
 //     return provider
 // }
 
-  async function createNote() {
+// const createNew = async (publicKey) => {
+ async function createNew(publicKey: PublicKey) {
     if (!title || title.length > 50) return ( 
       console.log("Error while setting the title, length > 50?"),
       notify({ type: 'error', message: "Error while setting the title, length > 50?" })
@@ -64,44 +76,44 @@ export const Notes: FC = () => {
     /* create the program interface combining the idl, program ID, and provider */
     const program = new Program(idl_object, programID, provider);
 
-    console.log("Provid ", provider);
-    console.log("programID ", programID.toBase58());
-    console.log("idl_object ", idl_object);
-    console.log("WALL: ", wallet, "Wall addr", wallet.publicKey)
-    console.log("Title ", title, "descr", description)
+    // console.log("Provid ", provider);
+    // console.log("programID ", programID.toBase58());
+    // console.log("idl_object ", idl_object);
+    // console.log("WALL: ", wallet, "Wall addr", wallet.publicKey)
+    // console.log("Title ", title, "descr", description)
     try {
       const seeds = utils.bytes.utf8.encode("noteaccount");
-      const s2 = provider.wallet.publicKey.toBuffer();
-      console.log("seeds ", seeds);
-      console.log("s2 ", s2);
+      // const s2 = provider.wallet.publicKey.toBuffer();
+      // console.log("seeds ", seeds);
+      // console.log("s2 ", s2);
       const par1 = Math.floor(Math.random() * (256 - 1) + 1);
-      console.log("par1 ", par1);
+      // console.log("par1 ", par1);
 
       const parsed_id = new anchor.BN(par1).toArrayLike(Buffer, 'be', 1);
-      console.log("parsed_id ", parsed_id);
+      // console.log("parsed_id ", parsed_id);
 
-      const [note] = await PublicKey.findProgramAddressSync([
-        seeds, s2, parsed_id], program.programId);
+      let [note] = PublicKey.findProgramAddressSync([
+        seeds, publicKey.toBuffer(), parsed_id], program.programId);
 
       await program.methods.createNote(par1, title, description)
         .accounts({
           note: note,
-          user: provider.wallet.publicKey,
+          user: wallet.publicKey,
           rent: web3.SYSVAR_RENT_PUBKEY,
           systemProgram: web3.SystemProgram.programId
         }).rpc()
 
       const account = await program.account.note.fetch(note);
-      console.log('account: ', account);
-      console.log("Note addr: ", note.toBase58())
-      console.log('account: ', account);
+      // console.log('account: ', account);
+      // console.log("Note addr: ", note.toBase58())
+      // console.log('account: ', account);
       setValue(account);
       notify({ type: 'success', message: 'Note created!' });
       setTitle("");
       setDescription("");
       getNotes();
     } catch (err) {
-      console.log("Transaction error: ", err);
+      // console.log("Transaction error: ", err);
       notify({ type: 'error', message: err });
     }
   }
@@ -122,7 +134,7 @@ export const Notes: FC = () => {
         })))
         // printout in a console
         .then(notes => {
-          console.log(notes)
+          // console.log(notes)
           // we want to display to UI level in our return func, so we create a new state
           // we declare const [banks, setBanks] = useState() up
           setNotes(notes)
@@ -137,16 +149,16 @@ export const Notes: FC = () => {
     }
   }
 
-  const editNote = async (publicKey) => {
+  const editNote = async (publicKey: PublicKey) => {
     if (!title || title.length > 50) return ( 
       console.log("Error while setting the title, length > 50?"),
-      notify({ type: 'error', message: "Error while setting the title, length > 50?" }),
-      publicKey = 0
+      notify({ type: 'error', message: "Error while setting the title, length > 50?" })
+      // publicKey = publicKey.toBase58()
     )
     if (!description || description.length > 500) return (
       console.log("Error while setting the description, length > 500?"),
-      notify({ type: 'error', message: "Error while setting the description, length > 50?" }),
-      publicKey = 0
+      notify({ type: 'error', message: "Error while setting the description, length > 50?" })
+      // publicKey = 0
     )
     if (!wallet) return
 
@@ -161,11 +173,11 @@ export const Notes: FC = () => {
         // BigNumber must be in lamports
         .accounts({
           note: publicKey,
-          user: provider.wallet.publicKey,  // is the signer 
+          user: wallet.publicKey,  // is the signer 
           systemProgram: web3.SystemProgram.programId
         }).rpc()
 
-      console.log("Note: ", publicKey, " was updated by: ", provider.wallet.publicKey);
+      console.log("Note: ", publicKey, " was updated by: ", wallet.publicKey);
       notify({ type: 'info', message: 'Note updated!' });
       setTitle("");
       setDescription("");
@@ -188,11 +200,11 @@ export const Notes: FC = () => {
         // BigNumber must be in lamports
         .accounts({
           note: publicKey,
-          user: provider.wallet.publicKey,  // is the signer 
+          user: wallet.publicKey,  // is the signer 
           systemProgram: web3.SystemProgram.programId
         }).rpc()
 
-      console.log("Note: ", publicKey, " was deleted by: ", provider.wallet.publicKey);
+      console.log("Note: ", publicKey, " was deleted by: ", wallet.publicKey);
       notify({ type: 'info', message: 'Note deleted!' });
       setTitle("");
       setDescription("");
@@ -202,6 +214,15 @@ export const Notes: FC = () => {
       notify({ type: 'error', message: error });
     }
   }
+
+  if (!wallet.publicKey) {
+    /* If the user's wallet is not connected, display connect wallet button. */
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+        <WalletMultiButton />
+      </div>
+    )
+  } else {
 
     return (
       <>
@@ -336,7 +357,7 @@ export const Notes: FC = () => {
                   />
                 </Form.Group>
                 <Button variant="primary group w-60 m-2 btn animate-pulse bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:from-white hover:to-purple-300 
-text-black" onClick={createNote}>
+text-black" onClick={() => {createNew(wallet.publicKey)}}>
                   Create Note
                 </Button>
               </Form>
@@ -357,15 +378,15 @@ text-black" onClick={createNote}>
       </>
     );
   }
+};
 
-
-export const NoteProvider = () => (
-  // export const NoteProvider: FC = () => (
-  <ConnectionProvider endpoint="https://api.devnet.solana.com">
-    <WalletProvider wallets={wallets} autoConnect>
-      <WalletModalProvider>
-        <Notes />
-      </WalletModalProvider>
-    </WalletProvider>
-  </ConnectionProvider>
-)
+// export const NoteProvider = () => (
+//   // export const NoteProvider: FC = () => (
+//   <ConnectionProvider endpoint="https://api.devnet.solana.com">
+//     <WalletProvider wallets={wallets} autoConnect>
+//       <WalletModalProvider>
+//         <Notes />
+//       </WalletModalProvider>
+//     </WalletProvider>
+//   </ConnectionProvider>
+// )
