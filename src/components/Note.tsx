@@ -27,6 +27,9 @@ const wallets = [
   new SolflareWalletAdapter(),
   new TorusWalletAdapter(),
 ]
+const delay = ms => new Promise(
+  resolve => setTimeout(resolve, ms)
+);
 
 export const NoteProvider: FC = () => {
   const [value, setValue] = useState(null);
@@ -208,6 +211,8 @@ export const NoteProvider: FC = () => {
       notify({ type: 'info', message: 'Note deleted!' });
       setTitle("");
       setDescription("");
+      await delay(1000);
+      getNotes();
 
     } catch (error) {
       console.error("Error while deleting: + " + error);
@@ -389,4 +394,4 @@ text-black" onClick={() => {createNew(wallet.publicKey)}}>
 //       </WalletModalProvider>
 //     </WalletProvider>
 //   </ConnectionProvider>
-// )
+// )AnchorpubliKy
