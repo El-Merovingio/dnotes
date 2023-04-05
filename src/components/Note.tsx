@@ -38,6 +38,10 @@ export const NoteProvider: FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const { connection } = useConnection();
+  const [count, setCount] = useState(0);
+  const [count2, setCount2] = useState(0);
+  const [count3, setCount3] = useState(0);
+  const [count4, setCount4] = useState(0);
 
   const getDate = (timestamp: number): Date => {
     return new Date(timestamp * 1000);
@@ -58,14 +62,14 @@ export const NoteProvider: FC = () => {
   }
 
 
-//   const getProvider = () => {
-//     const provider = new Provider(connection, wallet, Provider.defaultOptions())
-//     return provider
-// }
+  //   const getProvider = () => {
+  //     const provider = new Provider(connection, wallet, Provider.defaultOptions())
+  //     return provider
+  // }
 
-// const createNew = async (publicKey) => {
- async function createNew(publicKey: PublicKey) {
-    if (!title || title.length > 50) return ( 
+  // const createNew = async (publicKey) => {
+  async function createNew(publicKey: PublicKey) {
+    if (!title || title.length > 50) return (
       console.log("Error while setting the title, length > 50?"),
       notify({ type: 'error', message: "Error while setting the title, length > 50?" })
     )
@@ -74,7 +78,7 @@ export const NoteProvider: FC = () => {
       notify({ type: 'error', message: "Error while setting the description, length > 50?" })
     )
     if (!wallet) return
-    
+
     const provider = await getProvider()
     /* create the program interface combining the idl, program ID, and provider */
     const program = new Program(idl_object, programID, provider);
@@ -114,6 +118,7 @@ export const NoteProvider: FC = () => {
       notify({ type: 'success', message: 'Note created!' });
       setTitle("");
       setDescription("");
+      await delay(1000);
       getNotes();
     } catch (err) {
       // console.log("Transaction error: ", err);
@@ -153,12 +158,16 @@ export const NoteProvider: FC = () => {
   }
 
   const editNote = async (publicKey: PublicKey) => {
-    if (!title || title.length > 50) return ( 
+    if (title.length > 50) return (
       console.log("Error while setting the title, length > 50?"),
       notify({ type: 'error', message: "Error while setting the title, length > 50?" })
       // publicKey = publicKey.toBase58()
     )
-    if (!description || description.length > 500) return (
+    if (!title || !description) return (
+      console.log("Please re-fill all the values: {title} and {description}"),
+      notify({ type: 'error', message: "Please re-fill all the values: {title} and {description}" })
+    )
+    if (description.length > 500) return (
       console.log("Error while setting the description, length > 500?"),
       notify({ type: 'error', message: "Error while setting the description, length > 50?" })
       // publicKey = 0
@@ -184,6 +193,7 @@ export const NoteProvider: FC = () => {
       notify({ type: 'info', message: 'Note updated!' });
       setTitle("");
       setDescription("");
+      await delay(1000);
       getNotes();
 
     } catch (error) {
@@ -208,10 +218,10 @@ export const NoteProvider: FC = () => {
         }).rpc()
 
       console.log("Note: ", publicKey, " was deleted by: ", wallet.publicKey);
+      await delay(1000);
       notify({ type: 'info', message: 'Note deleted!' });
       setTitle("");
       setDescription("");
-      await delay(1000);
       getNotes();
 
     } catch (error) {
@@ -235,75 +245,63 @@ export const NoteProvider: FC = () => {
           // return (
           <div className="overflow-x-auto" key={note.id}>
             <table className="table table-compact">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Description</th>
-                  <th>Created</th>
-                  <th>Last Edited</th>
-                  <th>Delete</th>
-                  <th>Edit</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>{note.title}</td>
-                  <td>{note.description}</td>
-                  <td>{getDate(note.timestamp).toLocaleDateString("default")}</td>
-                  <td>{getDate(note.lastEdit).toLocaleDateString("default")}</td>
-
-                  <td>
+                  <th>
                     <div className="dropdown dropdown-end">
-                      <label tabIndex={0} className="btn m-1">More options</label>
-                      <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
-                        <li><a onClick={() => {
-                          if (window.confirm("Are you sure you want to delete this note?" + note.id)) {
-                            delNote(note.pubkey);
-                          }
-                        }}
-                        >Delete Note</a></li></ul></div></td>
-
+                      <label tabIndex={0} className="btn m-1">{note.title}</label>
+                      <ol tabIndex={0} className="dropdown-content menu p-1 shadow bg-base-100 rounded-box w-152">
+                        <li className='alert alert-info'><p><b>Description: {(note.description).toString()}</b></p>
+                        <p>Owner: {(note.owner).toString()}</p>
+                        <p>Date created: {getDate(note.timestamp).toLocaleDateString("default")}</p>
+                        <p>Date modified: {getDate(note.lastEdit).toLocaleDateString("default")}</p>
+                        
+                        </li>
+                        </ol>
+                        
+                        </div>
+                        </th>
                   <td>
                     <div className='header' key='my-modal'>
                       <input type="checkbox" id={note.id} className="modal-toggle" />
                       <div className="modal">
                         <div className="modal-box">
+                          <div className="modal-action">
+                            <label htmlFor={note.id} className="close">x</label>
+                          </div>
                           <h1 className="subti text-5xl font-bold text-transparent"><b>Edit Note</b></h1>
                           <Form>
                             <Form.Group controlId={note.id}>
-                              <Form.Label><b>Note ID</b></Form.Label>
-                              <Form.Control
-                                type="number"
-                                name={note.pubkey}
-                                placeholder={note.id}
-                                className="block text-center dark:bg-blue-700"
-                                value={note.id}
-                                readOnly
-                                disabled
-                                onChange={(e) => setValue(e.target.value)}
-                              />
+                            <span className="t2 text-left"><b>Creation date: </b> {getDate(note.timestamp).toLocaleDateString("default")}</span>
+                            <p><span className="t2 text-left"><b>Last edit date: </b> {getDate(note.lastEdit).toLocaleDateString("default")}</span></p>
                             </Form.Group>
                             <Form.Group controlId={note.title}>
-                              <Form.Label><b>Title</b></Form.Label>
+                              <Form.Label className='title'><b>Title</b></Form.Label>
                               <Form.Control
-                                type="text"
+                                as="textarea"
                                 // name="titleID"
-                                placeholder="Enter new note title (Max 50 length)"
+                                // placeholder="Enter new note title (Max 50 length)"
+                                placeholder={note.title}
                                 className="block dark:bg-gray-700"
+                                style={{ "height": "25px" }}
+                                maxLength={50}
                                 value={title}
-                                onChange={(e) => setTitle(e.target.value)}
+                                onChange={(e) => { (setCount(e.target.value.length)); (setTitle(e.target.value)) }}
                               />
+                              <Form.Label className='t1'><b>Characters left: </b> {50 - count}</Form.Label>
                             </Form.Group>
                             <Form.Group controlId={note.description}>
-                              <Form.Label><b>Description</b></Form.Label>
+                              <Form.Label className='title'><b>Description</b></Form.Label>
                               <Form.Control
                                 as="textarea"
                                 // name="descID"
-                                placeholder="Enter new note description (Max 500 length)"
+                                // placeholder="Enter new note description (Max 500 length)"
+                                placeholder={note.description}
                                 className="block dark:bg-gray-700"
+                                style={{ "height": "180px" }}
+                                maxLength={500}
                                 value={description}
-                                onChange={(e) => setDescription(e.target.value)}
+                                onChange={(e) => { (setCount2(e.target.value.length)); (setDescription(e.target.value)) }}
                               />
+                              <Form.Label className='t1'><b>Characters left: </b> {500 - count2}</Form.Label>
                             </Form.Group>
                             <Button variant="primary group w-60 m-2 btn animate-pulse bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:from-white hover:to-purple-300 
                                 text-black"
@@ -316,56 +314,98 @@ export const NoteProvider: FC = () => {
                               Edit Note
                             </Button>
                           </Form>
-                          <div className="modal-action">
-                            <label htmlFor={note.id} className="btn">Close</label>
-                          </div>
+                          <button
+                className="group w-60 m-2 btn animate-pulse bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:from-white hover:to-purple-300 text-black"
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to delete this note?" + note.id)) {
+                    delNote(note.pubkey);
+                    close()
+                  }
+                }}
+              ><span className="block group-disabled:hidden" >
+                  Delete Note
+                </span>
+              </button>
                         </div>
                       </div>
+                      
                     </div>
                     <a onClick={() => {
                       setTitle("");
                       setDescription("");
                     }}><label htmlFor={note.id} className="btn"> Edit Note</label></a>
-                  </td>
+                  
 
-                </tr>
-              </tbody>
+                  </td>    
             </table>
           </div>
           // )
         ))}
 
 
-        <div className="form">
-          <>
-            <div>
+        <div className='header' key='my-modal1'>
+          <input type="checkbox" id="my-create-modal" className="modal-toggle" />
+          <div className="modal">
+            <div className="modal-box">
+            <div className="modal-action">
+                            <label htmlFor="my-create-modal" className="close">x</label>
+                          </div>
               <h1 className="subti text-5xl font-bold text-transparent"><b>Create Note</b></h1>
               <Form>
-                <Form.Group controlId="noteTitle">
-                  <Form.Label><b>Title</b></Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Enter note title (Max 50 length)"
-                    className="block dark:bg-gray-700"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </Form.Group>
-                <Form.Group controlId="noteDescription">
-                  <Form.Label><b>Description</b></Form.Label>
+                <Form.Group>
+                  <Form.Label className='title'><b>Title</b></Form.Label>
                   <Form.Control
                     as="textarea"
-                    placeholder="Enter note description (Max 500 length)"
+                    // name="titleID"
+                    placeholder="Enter new note title (Max 50 length)"
                     className="block dark:bg-gray-700"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    style={{ "height": "25px" }}
+                    maxLength={50}
+                    value={title}
+                    onChange={(e) => { (setCount3(e.target.value.length)); (setTitle(e.target.value)) }}
                   />
+                  <Form.Label className='t1'><b>Characters left: </b> {50 - count3}</Form.Label>
+                </Form.Group>
+                <Form.Group>
+                  <Form.Label className='title'><b>Description</b></Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    // name="descID"
+                    placeholder="Enter new note description (Max 500 length)"
+                    className="block dark:bg-gray-700"
+                    style={{ "height": "180px" }}
+                    maxLength={500}
+                    value={description}
+                    onChange={(e) => { (setCount4(e.target.value.length)); (setDescription(e.target.value)) }}
+                  />
+                  <Form.Label className='t1'><b>Characters left: </b> {500 - count4}</Form.Label>
                 </Form.Group>
                 <Button variant="primary group w-60 m-2 btn animate-pulse bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:from-white hover:to-purple-300 
-text-black" onClick={() => {createNew(wallet.publicKey)}}>
+                                text-black"
+                  onClick={() => { createNew(wallet.publicKey) }}>
+                  {/* onClick={editNote(note.pubkey)}> */}
                   Create Note
                 </Button>
               </Form>
+
+            </div>
+          </div>
+        </div>
+
+
+
+        <div className="form">
+          <>
+            <div>
+            <h1 className="subti text-center text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 to-fuchsia-500 mt-10 mb-8">
+          Notes dApp
+        </h1>
+
+              <a onClick={() => {
+                setTitle("");
+                setDescription("");
+              }}><label htmlFor="my-create-modal" className="group w-60 m-2 btn animate-pulse bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:from-white hover:to-purple-300 
+        text-black"> Create Note</label></a>
               <button
                 className="group w-60 m-2 btn animate-pulse bg-gradient-to-br from-indigo-500 to-fuchsia-500 hover:from-white hover:to-purple-300 text-black"
                 onClick={() => getNotes()}
@@ -385,13 +425,3 @@ text-black" onClick={() => {createNew(wallet.publicKey)}}>
   }
 };
 
-// export const NoteProvider = () => (
-//   // export const NoteProvider: FC = () => (
-//   <ConnectionProvider endpoint="https://api.devnet.solana.com">
-//     <WalletProvider wallets={wallets} autoConnect>
-//       <WalletModalProvider>
-//         <Notes />
-//       </WalletModalProvider>
-//     </WalletProvider>
-//   </ConnectionProvider>
-// )AnchorpubliKy
