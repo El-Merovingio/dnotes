@@ -1,5 +1,8 @@
+# Backend
+The corresponding backend is in the following repo: https://github.com/NonFungibleHacker/solana-dnotes
 
-# Solana dApp Scaffold Next
+
+## Notes dApp 
 This Project was developed for the Ackee School of Solana (https://ackeeblockchain.com/school-of-solana), and it was created based on the Solana Scaffold (https://github.com/solana-labs/dapp-scaffold)
 
 # About
